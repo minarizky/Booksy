@@ -1,33 +1,25 @@
-const axios = require('axios');
-const { pool } = require('../database');
+const express = require('express');
+const { searchBooks, getFavorites, addFavorite } = require('./controllers/bookController');
 
-const searchBooks = async (req, res) => {
-  try {
-    const { query } = req.query;
-    const response = await axios.get(`https://openlibrary.org/search.json?q=${query}`);
-    res.json(response.data.docs);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch books from API' });
-  }
-};
+const app = express();
 
-const getFavorites = async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM favorites');
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch favorite books' });
-  }
-};
+// Use PORT from environment or default to 3000
+const PORT = process.env.PORT || 3000;
 
-const addFavorite = async (req, res) => {
-  try {
-    const { title, author, cover } = req.body;
-    await pool.query('INSERT INTO favorites (title, author, cover) VALUES ($1, $2, $3)', [title, author, cover]);
-    res.status(201).json({ message: 'Book added to favorites' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to add book to favorites' });
-  }
-};
+app.use(express.json());
 
-module.exports = { searchBooks, getFavorites, addFavorite };
+// Middleware to log incoming requests
+app.use((req, res, next) => {
+  console.log(`${req.method} request to ${req.url}`);
+  next();
+});
+
+// Routes
+app.get('/search', searchBooks);
+app.get('/favorites', getFavorites);
+app.post('/favorites', addFavorite);
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
